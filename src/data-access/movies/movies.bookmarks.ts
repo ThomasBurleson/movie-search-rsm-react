@@ -84,11 +84,11 @@ export function syncUrlToStore(vm: MovieViewModel): MovieViewModel {
   if (window?.location) {
     let { searchBy, filterBy, page } = extractQueryParams(window.location);
 
-    searchBy ||= vm.searchBy;
+    searchBy ||= vm.searchBy || 'dogs';
     filterBy ||= vm.filterBy;
-    page ||= vm.pagination.currentPage;
+    page ||= vm.pagination.currentPage || 1;
 
-    vm.searchMovies(searchBy, page, filterBy);
+    vm.searchMovies(searchBy, page, filterBy, true);
   }
   return vm;
 }

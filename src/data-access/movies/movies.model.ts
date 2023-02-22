@@ -53,7 +53,7 @@ export interface MovieGenreState {
  */
 export interface MovieAPI {
   updateFilter: (filterBy: string) => void;
-  searchMovies: (searchBy: string, page?: number, filterBy?: string) => void;
+  searchMovies: (searchBy: string, page?: number, filterBy?: string, updateFirst?: boolean) => void;
   selectGenresById: (selectedIDs: string[]) => void;
   clearFilter: () => void;
 }
