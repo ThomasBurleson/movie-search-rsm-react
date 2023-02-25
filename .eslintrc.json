@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "ignorePatterns": ["!**/*"],
+  "plugins": [],
+  "extends": ["plugin:@typescript-eslint/recommended"],
+  "overrides": [
+    {
+      "files": ["*.ts"],
+      "extends": [],
+      "rules": {}
+    },
+    {
+      "files": ["*.html"],
+      "extends": [],
+      "rules": {}
+    }
+  ]
+}

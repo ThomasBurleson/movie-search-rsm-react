@@ -1,15 +1,13 @@
 @tailwind base;
-
-/* Your own custom base styles */
-
-/* Start purging... */
 @tailwind components;
-/* Stop purging. */
-
-/* Your own custom component styles */
-
-/* Start purging... */
 @tailwind utilities;
-/* Stop purging. */
 
 /* Your own custom utilities */
+div > .match,
+p > .match {
+  color: rgb(190, 8, 8);
+  background-color: rgb(209 250 229 / var(--tw-bg-opacity));
+  padding: 3px;
+  padding-bottom: 3px;
+  border-radius: 3px;
+}
