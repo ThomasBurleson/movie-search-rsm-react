@@ -1,4 +1,4 @@
-import { MovieItem } from './movies.model';
+import { MovieItem, MovieState } from './movies.model';
 
 const contentHasMatch = (filterBy: string) => {
   filterBy = filterBy.toLowerCase();
@@ -14,7 +14,7 @@ const contentHasMatch = (filterBy: string) => {
  * Why are computed properties valuable, calculated on-demand
  * and NOT serialized.
  */
-export function computeFilteredMovies(allMovies: MovieItem[], filterBy: string): MovieItem[] {
+export function computeFilteredMovies({ allMovies, filterBy }: Partial<MovieState>): MovieItem[] {
   const addMatchIndicators = buildMatchIndicator(filterBy);
   const filteredMovies = useFilterBy(allMovies, filterBy);
 
@@ -49,3 +49,14 @@ export const buildMatchIndicator =
       overview: matchIn(m.overview),
     }));
   };
+
+/**
+ * Why are computed properties valuable, calculated on-demand
+ * and NOT serialized.
+ */
+export function computeMatchedMovies(state: Partial<MovieState>): MovieItem[] {
+  const movies = computeFilteredMovies(state);
+  const addMatchIndicators = buildMatchIndicator(state.filterBy);
+
+  return addMatchIndicators(movies);
+}

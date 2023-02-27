@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { StoreApi, useStore } from 'zustand';
 
-import { PAGES, GENRES } from './_tests_/_mocks_/movies.data';
-import { initState, MovieViewModel, MovieGenreViewModel } from './movies.model';
-import { syncStoreToUrl, syncUrlToStore } from './movies.bookmarks';
+import { GENRES } from './_tests_/_mocks_/movies.data';
 
-// ************************************************************************
-// Service instances with MOCK data...
-// NOTE: Placeholders until Facade + Store are implemented!!
-// ************************************************************************
+import { MoviesDataService } from './movies.api';
+import { buildStore} from './movies.store'
+import { MovieViewModel, MovieGenreViewModel } from './movies.model';
+import { syncStoreToUrl } from './movies.bookmarks';
 
 
-const genres: MovieGenreViewModel = {
+ const genres: MovieGenreViewModel = {
   list: GENRES.genres,
   selected: [],
   totalCount: 0,
@@ -22,60 +21,21 @@ const genres: MovieGenreViewModel = {
   status: { value: 'initializing' },
 };
 
-/**
- * Factory to build mock ViewModel
- */
-function makeViewModel(): MovieViewModel {
-  const showPage = (page: number) => { vm.pagination.currentPage = page };
-  let vm = {
-    ...initState(),
-    searchBy: 'dogs',
-    allMovies: PAGES[0].list,
-    filteredMovies: PAGES[0].list,
-    pagination: { ...PAGES[0].pagination, showPage },
-    searchMovies: () => {},
-    updateFilter: () => {},
-    selectGenresById: () => {},
-    clearFilter: () => {},
-  };
 
-  /**
-   * Special case for app startup
-   */
-  const searchOnStartup = (searchBy: string, page?:number, filterBy?:string) => {
-    filterBy ||= vm.filterBy;
-    page ||= vm.pagination.currentPage;
-    searchBy ||= vm.searchBy;
-    vm = ({ ...vm, searchBy, filterBy, pagination: { ...vm.pagination, currentPage: page } });
-  };
-  syncUrlToStore({...vm, searchMovies: searchOnStartup}); 
+// ************************************************************************
+// Factory function to inject a API service into the store
+// NOTE: private singleton cache. Use `@mindspace-io/react-store` DI instead
+// ************************************************************************
 
-  return vm;
-}
-
-/**
- * Enable the updates to the VM to trigger hook re-renders
- * NOTE: only need since we are using mock data INSTEAD of a Reactive Store
- */
-function onAPI(vm, setVM): MovieViewModel {
-  const searchMovies = (searchBy: string, page?:number, filterBy?:string) => {    
-    setVM(vm => {
-      filterBy ||= vm.filterBy;
-      page ||= vm.pagination.currentPage;
-
-      return ({ ...vm, searchBy, filterBy, pagination: { ...vm.pagination, currentPage: page } })
-    });
-  };
-  const updateFilter = (filterBy: string) => {
-    setVM(vm => ({ ...vm, filterBy }));
+let store: StoreApi<MovieViewModel>;
+function makeViewModel() {
+  if (!store) {
+    const api = new MoviesDataService();
+    store = buildStore(api);
   }
-  const showPage = (page: number) => { setVM( vm => {
-    return ({ ...vm, pagination: { ...vm.pagination, currentPage: page } })
-  })};
-  const pagination = { ...vm.pagination, showPage };
-
-  return {...vm, pagination, searchMovies, updateFilter};
+  return store
 }
+
 // ************************************************************************
 // ************************************************************************
 
@@ -89,10 +49,12 @@ export type MovieFacadeResults = [MovieViewModel, MovieGenreViewModel];
  * @returns MovieViewModel
  */
 export function useMovieFacade(): MovieFacadeResults {
-  const [vm, setVM] = useState(makeViewModel);
-  
-  useEffect(() => { syncUrlToStore(vm) }, []);    // update store from URL
-  useEffect(() => { syncStoreToUrl(vm) }, [vm]);  // update URL from store
+  const vm = useStore(makeViewModel());
 
-  return [ onAPI(vm, setVM), genres ];
+  useEffect(() => { 
+    const unsubscribe = store.subscribe(syncStoreToUrl);
+    return () => unsubscribe();    
+   }, []);  // update URL from store
+
+  return [ vm, genres ];
 }
