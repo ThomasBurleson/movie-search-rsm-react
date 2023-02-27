@@ -1,3 +1,3 @@
 export * from './computed';
-export * from './rsm';
+export * from './data-paginator';
 export * from './rxjs';

@@ -1,10 +1,54 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MovieViewModel } from './movies.model';
+import { MovieViewModel } from '../movies.model';
 
 /**
  * What are the possbile URL query params?
  */
 const MOVIE_URL_PARAMS = ['searchBy', 'filterBy', 'page'];
+
+// **********************************************************
+// Bookmark utils for bidi synchronization of URL to Store
+// **********************************************************
+
+/**
+ * Gather current values in the store and reflect those
+ * to show on the URL for bookmarking
+ */
+export function syncStoreToUrl(vm: MovieViewModel): MovieViewModel {
+  const { history, location } = window;
+  if (history && location) {
+    const { search, origin, pathname } = location;
+
+    const searchParams = new URLSearchParams(search);
+    const urlParams = buildQueryParams(vm, searchParams);
+    const newUrl = `${origin}${pathname}?${urlParams.toString()}`;
+
+    // update the bookmark (replace so back arrow will not change state)
+    history.replaceState({ path: newUrl }, '', newUrl);
+  }
+  return vm;
+}
+
+/**
+ * Using the History location object, gather expected query params
+ * and update the Store state
+ *
+ * NOTE: do as the 'store' is being initialized/created
+ */
+export function syncUrlToStore(vm: MovieViewModel): MovieViewModel {
+  if (window?.location) {
+    let { searchBy, filterBy, page } = extractQueryParams(window.location);
+
+    // Only if the URL has searchBy do we re-query server
+    // `persist()` will restore from local cache
+    searchBy ||= vm.searchBy;
+    filterBy ||= vm.filterBy;
+    page ||= vm.pagination.currentPage || 1;
+
+    vm.searchMovies(searchBy, page, filterBy);
+  }
+  return vm;
+}
 
 // ************************************************
 // Query Param Utils
@@ -49,46 +93,4 @@ export function buildQueryParams(storeParams: Record<string, any>, urlParams: UR
   });
 
   return urlParams;
-}
-
-// **********************************************************
-// Bookmark utils for bidi synchronization of URL to Store
-// **********************************************************
-
-/**
- * Gather current values in the store and reflect those
- * to show on the URL for bookmarking
- */
-export function syncStoreToUrl(vm: MovieViewModel): MovieViewModel {
-  const { history, location } = window;
-  if (history && location) {
-    const { search, origin, pathname } = location;
-
-    const searchParams = new URLSearchParams(search);
-    const urlParams = buildQueryParams(vm, searchParams);
-    const newUrl = `${origin}${pathname}?${urlParams.toString()}`;
-
-    // update the bookmark (replace so back arrow will not change state)
-    history.replaceState({ path: newUrl }, '', newUrl);
-  }
-  return vm;
-}
-
-/**
- * Using the History location object, gather expected query params
- * and update the Store state
- *
- * NOTE: do as the 'store' is being initialized/created
- */
-export function syncUrlToStore(vm: MovieViewModel): MovieViewModel {
-  if (window?.location) {
-    let { searchBy, filterBy, page } = extractQueryParams(window.location);
-
-    searchBy ||= vm.searchBy;
-    filterBy ||= vm.filterBy;
-    page ||= vm.pagination.currentPage;
-
-    vm.searchMovies(searchBy, page, filterBy);
-  }
-  return vm;
 }

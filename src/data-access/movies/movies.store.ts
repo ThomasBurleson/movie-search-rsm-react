@@ -1,17 +1,23 @@
-import create from 'zustand/vanilla';
+import { createStore } from 'zustand/vanilla';
 import { StoreApi } from 'zustand/vanilla';
 import { devtools, persist } from 'zustand/middleware';
-
 import { immer } from 'zustand/middleware/immer';
+import { firstValueFrom } from 'rxjs';
 
-import { firstValueFrom, map, pipe } from 'rxjs';
-import { MoviesDataService, PaginatedMovieResponse } from './movies.api';
+import { computeWith } from '../utils';
+import { MoviesDataService } from './movies.api';
+import { partialize, merge } from './extras/movies.persist';
+import { computeMatchedMovies } from './extras/movies.computed';
+import { makeStorePaginator, LoadItemsCallback } from './extras/movies.paginator';
 import { initState, MovieAPI, MovieState, MovieViewModel, MovieComputedState } from './movies.model';
-import { computeMatchedMovies } from './movies.filters';
-import { computeWith } from '../utils/computed';
-import { syncUrlToStore } from './movies.bookmarks';
 
-const extractMovieItems = pipe(map((response: PaginatedMovieResponse) => response.list));
+const selectGenresById = () => {
+  console.warn('Not implemented yet!');
+};
+
+// *************************************************
+// Zustand Store Factory
+// *************************************************
 
 /**
  * Create an instance of the Zustand store engine
@@ -24,23 +30,28 @@ export function buildStore(movieAPI: MoviesDataService): StoreApi<MovieViewModel
   };
 
   /**
-   * Factory to create a Reactive movie Store
+   * Factory to create a Zustand Reactive MovieStore; which emits a MovieViewModel
    */
-  const buildStoreFn = (set, get, store): MovieViewModel => {
+  const configureMovieStore = (set, get, store): MovieViewModel => {
     set = computeWith<MovieViewModel>(buildComputedFn, store);
 
+    const loadMovies: LoadItemsCallback = movieAPI.searchMovies.bind(movieAPI);
+    const paginator = makeStorePaginator(get, set, loadMovies);
+
     const data: MovieState = initState();
+    const computed = buildComputedFn(data);
+    const pagination = paginator.buildPagination();
     const api: MovieAPI = {
       // Load movies based on searchBy and page
       searchMovies: async (searchBy: string, page = 1, filterBy = ''): Promise<boolean> => {
         if (!!searchBy) {
-          const request$ = movieAPI.searchMovies(searchBy, page || 1).pipe(extractMovieItems);
-          const allMovies = await firstValueFrom(request$);
+          const reset = searchBy !== get().searchBy;
+          const request$ = movieAPI.searchMovies(searchBy, page || 1);
+          const response = await firstValueFrom(request$);
 
-          filterBy = filterBy || get().filterBy;
-          set({ allMovies, searchBy, filterBy });
+          paginator.updatePagination(searchBy, filterBy, response, reset);
+          paginator.prefetch(searchBy, filterBy, page + 1);
         }
-
         return true;
       },
       // Filter movies and highlight matching text
@@ -51,33 +62,36 @@ export function buildStore(movieAPI: MoviesDataService): StoreApi<MovieViewModel
       clearFilter: (): void => {
         set({ filterBy: '' });
       },
-      selectGenresById: (): void => {
-        console.warn('Not implemented yet!');
-      },
+      // Use a special `showPage()` interceptor in order to update store
+      showPage: pagination.showPage,
+      selectGenresById,
     };
 
-    // a store view model is both 'data' + 'api' + 'computed props'
+    // Initial Store view model
     return {
       ...data,
       ...api,
-      ...buildComputedFn(data),
+      ...computed,
+      pagination,
     };
   };
 
-  // Return entire MovieViewModel
-  const store = create<MovieViewModel>()(
+  /**
+   * Enable the ReactiveStore for Redux DevTools, and persistence to localStorage,
+   * and ensure the ViewModel is immutable using Immer
+   */
+  const store = createStore<MovieViewModel>()(
     // prettier-ignore
     devtools(
       persist(
-        immer(buildStoreFn), 
-        { name: 'movieSearch' }
+        immer(
+          configureMovieStore
+        ), 
+        { name: 'movieSearch', partialize, merge }
       ),
       { name: 'movieSearch' }
     )
   );
-
-  // Capture initial URL to update application state
-  syncUrlToStore(store.getState());
 
   return store;
 }

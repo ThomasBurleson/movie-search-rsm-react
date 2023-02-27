@@ -25,7 +25,7 @@ function getWithAxios<T>(url: string, params?: unknown): Observable<T> {
 // Formatted response for business layers
 export interface PaginatedMovieResponse {
   list: MovieItem[];
-  pagination: Pagination;
+  pagination: Partial<Pagination>;
 }
 
 // Response from remote endpoint

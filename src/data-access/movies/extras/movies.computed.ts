@@ -1,4 +1,4 @@
-import { MovieItem, MovieState } from './movies.model';
+import { MovieItem, MovieState } from '../movies.model';
 
 const contentHasMatch = (filterBy: string) => {
   filterBy = filterBy.toLowerCase();

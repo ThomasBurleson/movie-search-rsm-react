@@ -7,7 +7,7 @@ import { GENRES } from './_tests_/_mocks_/movies.data';
 import { MoviesDataService } from './movies.api';
 import { buildStore} from './movies.store'
 import { MovieViewModel, MovieGenreViewModel } from './movies.model';
-import { syncStoreToUrl } from './movies.bookmarks';
+import { syncStoreToUrl, syncUrlToStore } from './extras/movies.bookmarks';
 
 
  const genres: MovieGenreViewModel = {
@@ -18,7 +18,6 @@ import { syncStoreToUrl } from './movies.bookmarks';
   isLoading: false,
   showSkeleton: true,
   hasError: false,
-  status: { value: 'initializing' },
 };
 
 
@@ -31,7 +30,7 @@ let store: StoreApi<MovieViewModel>;
 function makeViewModel() {
   if (!store) {
     const api = new MoviesDataService();
-    store = buildStore(api);
+    store = buildStore(api);    
   }
   return store
 }
@@ -50,9 +49,11 @@ export type MovieFacadeResults = [MovieViewModel, MovieGenreViewModel];
  */
 export function useMovieFacade(): MovieFacadeResults {
   const vm = useStore(makeViewModel());
-
+  
   useEffect(() => { 
+    syncUrlToStore(store.getState());   
     const unsubscribe = store.subscribe(syncStoreToUrl);
+    
     return () => unsubscribe();    
    }, []);  // update URL from store
 

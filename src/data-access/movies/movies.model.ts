@@ -1,16 +1,27 @@
-import { Pagination, ReactiveListVM } from '../utils';
+import { Pagination, Entity } from '../utils';
 
-export interface MovieItem extends Record<string, unknown> {
-  id: string;
+export interface MovieItem extends Entity {
   title: string;
   overview: string;
   poster_path: string;
   genre_ids: number[];
+  [key: string]: unknown;
 }
 
 export interface MovieGenre {
   id: string;
   name: string;
+  [key: string]: unknown;
+}
+
+export interface ReactiveListVM<T extends Entity> {
+  list: T[];
+  selected: T[];
+  totalCount: number;
+  isReady: boolean;
+  isLoading: boolean;
+  showSkeleton: boolean;
+  hasError: boolean;
 }
 
 export type MovieGenreViewModel = ReactiveListVM<MovieGenre>;
@@ -53,9 +64,12 @@ export interface MovieGenreState {
  */
 export interface MovieAPI {
   updateFilter: (filterBy: string) => void;
-  searchMovies: (searchBy: string, page?: number, filterBy?: string) => void;
+  searchMovies: (searchBy: string, page?: number, filterBy?: string) => Promise<boolean>;
   selectGenresById: (selectedIDs: string[]) => void;
   clearFilter: () => void;
+
+  // Pagination
+  showPage: (page: number) => Promise<boolean>;
 }
 
 export type MovieViewModel = MovieState & MovieComputedState & MovieAPI;
