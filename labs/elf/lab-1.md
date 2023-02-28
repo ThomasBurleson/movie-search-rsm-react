@@ -1,6 +1,6 @@
 ![](https://user-images.githubusercontent.com/210413/220787979-7c594623-1902-4c0e-a99c-bea0e06d8981.png)
 
-## Lab 1 - Implement `MovieStore.ts`
+## Lab 1 - Implement Elf `MovieStore.ts`
 
 Implement the Elf store `/data-access/movies.store.ts` using the template below.
 
