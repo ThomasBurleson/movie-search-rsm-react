@@ -7,8 +7,8 @@ import { MovieViewModel } from '../movies.model';
 /**
  * Due to pagination complexities, we on persist ONLY the URL-related params.
  *
- * These params are merged with current URL params on page load and
- * then used to requery the API for the specified page of movies.
+ * These local storage params are merged with current URL params during page load.
+ * Then the 'final' params are used to requery the API for the specified page of movies.
  */
 export const partialize = ({ searchBy, filterBy, pagination }: MovieViewModel) => ({ searchBy, filterBy, page: pagination.currentPage });
 export const merge = ({ searchBy, filterBy, page }, currentState) => {
